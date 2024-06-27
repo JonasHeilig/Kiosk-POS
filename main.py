@@ -20,8 +20,7 @@ class User(db.Model):
     username = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(128))
     allow_sell = db.Column(db.Boolean, default=False)
-    add_seller = db.Column(db.Boolean, default=False)
-    add_students = db.Column(db.Boolean, default=False)
+    isAdmin = db.Column(db.Boolean, default=False)
     total_earnings = db.Column(db.Float, default=0.0)
 
 
@@ -61,7 +60,7 @@ class TransactionsLoadMoney(db.Model):
 
 
 def create_default_user():
-    admin_user = User(username='admin', password=generate_password_hash('password'), add_seller=True, add_students=True)
+    admin_user = User(username='admin', password=generate_password_hash('password'), isAdmin=True)
     db.session.add(admin_user)
     db.session.commit()
 
@@ -73,23 +72,6 @@ if not os.path.exists('instance/db.db'):
         print("Datenbank erstellt.")
 
 
-# Permission Check
-# Check if user is logged in
-#  if 'username' not in session:
-#      return redirect(url_for('login'))
-#
-# Check if user has permission to add seller
-#  if 'username' not in session or not session['add_seller']:
-#      return redirect(url_for('login'))
-#
-# Check if user has permission to add students
-#  if 'username' not in session or not session['add_students']:
-#      return redirect(url_for('login'))
-#
-# Check if user has permission to sell
-#  if 'username' not in session or not session['allow_sell']:
-#      return redirect(url_for('login'))
-
 @app.route('/')
 def index():
     return render_template('index.html', app_name=app_name)
@@ -97,23 +79,27 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = request.args.get('error', '')
+    if 'username' in session:
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         session_user = User.query.filter_by(username=username).first()
         if session_user and check_password_hash(session_user.password, password):
+            session['username'] = username
             session['user_id'] = session_user.id
             return redirect(url_for('dashboard'))
         else:
-            return render_template('login.html', error="Invalid username or password")
-    return render_template('login.html', app_name=app_name)
+            return render_template('login.html', app_name=app_name, error="Invalid username or password")
+    return render_template('login.html', app_name=app_name, error=error)
 
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
-    session_user = User.query.get(session['user_id'])
+    session_user = db.session.get(User, session['user_id'])
     return render_template('dashboard.html', user_name=session_user.username, app_name=app_name)
 
 
@@ -121,13 +107,38 @@ def dashboard():
 def user():
     if 'username' not in session:
         return redirect(url_for('login'))
+    session_user = db.session.get(User, session['user_id'])
     return render_template('user.html', user_name=session_user.username, app_name=app_name)
+
+
+@app.route('/add_seller', methods=['GET', 'POST'])
+def add_seller():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if 'username' not in session or not session.get('isAdmin'):
+        session.pop('username', None)
+        return redirect(url_for('login', error="You do not have permission to add sellers. Please login as an admin."))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        allow_sell = request.form.get('allow_sell') == 'on'
+        add_seller_perm = request.form.get('isAdmin') == 'on'
+        new_seller = User(username=username, password=generate_password_hash(password), allow_sell=allow_sell,
+                          add_seller=add_seller_perm, add_students=add_students)
+        db.session.add(new_seller)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+    return render_template('add_seller.html', app_name=app_name)
 
 
 @app.route('/kiosk', methods=['GET', 'POST'])
 def kiosk():
-    if 'username' not in session or not session['allow_sell']:
+    if 'username' not in session:
         return redirect(url_for('login'))
+    if 'username' not in session or not session.get('allow_sell'):
+        session.pop('username', None)
+        return redirect(url_for('login', error="You do not have permission to sell. Please login as a seller."))
+    session_user = db.session.get(User, session['user_id'])
     return render_template('kiosk.html', app_name=app_name)
 
 
