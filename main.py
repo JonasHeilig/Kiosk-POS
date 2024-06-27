@@ -95,36 +95,33 @@ def login():
     return render_template('login.html', app_name=app_name, error=error)
 
 
-@app.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    session_user = db.session.get(User, session['user_id'])
-    return render_template('dashboard.html', user_name=session_user.username, app_name=app_name)
-
-
 @app.route('/user', methods=['GET', 'POST'])
 def user():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('login', error="You do not have permission to access the user page. Please login."))
     session_user = db.session.get(User, session['user_id'])
     return render_template('user.html', user_name=session_user.username, app_name=app_name)
 
 
+@app.route('/dashboard', methods=['GET', 'POST'])
+def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login', error="You do not have permission to access the dashboard. Please login."))
+    session_user = db.session.get(User, session['user_id'])
+    return render_template('dashboard.html', user_name=session_user.username, app_name=app_name)
+
+
 @app.route('/add_seller', methods=['GET', 'POST'])
 def add_seller():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if 'username' not in session or not session.get('isAdmin'):
-        session.pop('username', None)
+    if not check_permissions(['isAdmin']):
         return redirect(url_for('login', error="You do not have permission to add sellers. Please login as an admin."))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         allow_sell = request.form.get('allow_sell') == 'on'
-        add_seller_perm = request.form.get('isAdmin') == 'on'
+        isAdmin = request.form.get('isAdmin') == 'on'
         new_seller = User(username=username, password=generate_password_hash(password), allow_sell=allow_sell,
-                          add_seller=add_seller_perm, add_students=add_students)
+                          isAdmin=isAdmin)
         db.session.add(new_seller)
         db.session.commit()
         return redirect(url_for('dashboard'))
@@ -133,19 +130,43 @@ def add_seller():
 
 @app.route('/kiosk', methods=['GET', 'POST'])
 def kiosk():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if 'username' not in session or not session.get('allow_sell'):
-        session.pop('username', None)
+    if not check_permissions(['allow_sell']):
         return redirect(url_for('login', error="You do not have permission to sell. Please login as a seller."))
     session_user = db.session.get(User, session['user_id'])
-    return render_template('kiosk.html', app_name=app_name)
+    return render_template('kiosk.html', app_name=app_name, user_name=session_user.username)
+
+
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        session_user = User.query.filter_by(username=session['username']).first()
+        if session_user and check_password_hash(session_user.password, old_password):
+            session_user.password = generate_password_hash(new_password)
+            db.session.commit()
+            return redirect(url_for('user'))
+        else:
+            return render_template('change_password.html', app_name=app_name, error="Old password is incorrect.")
+    return render_template('change_password.html', app_name=app_name)
 
 
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     return redirect(url_for('index'))
+
+
+def check_permissions(required_permissions):
+    if 'username' not in session:
+        return False
+    session_user = db.session.get(User, session['user_id'])
+    for permission in required_permissions:
+        if not getattr(session_user, permission):
+            return False
+    return True
 
 
 if __name__ == '__main__':
