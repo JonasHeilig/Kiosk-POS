@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ app_name }} - Update User</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ app_name }} - Update User</h1>
+        <form method="post" action="/update_user">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username:</label>
+                <input type="text" id="username" name="username" class="form-control" value="{{ user.username }}">
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" id="allow_sell" name="allow_sell" class="form-check-input" {% if user.allow_sell %}checked{% endif %}>
+                <label for="allow_sell" class="form-check-label">Allow Sell</label>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" id="isAdmin" name="isAdmin" class="form-check-input" {% if user.isAdmin %}checked{% endif %}>
+                <label for="isAdmin" class="form-check-label">Is Admin</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Update User</button>
+        </form>
+    </div>
+</body>
+</html>

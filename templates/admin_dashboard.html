@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ app_name }} - Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ app_name }} - Admin Dashboard</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Username</th>
+                    <th scope="col">Allow Sell</th>
+                    <th scope="col">Is Admin</th>
+                    <th scope="col">Total Earnings</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.allow_sell }}</td>
+                    <td>{{ user.isAdmin }}</td>
+                    <td>{{ user.total_earnings }}</td>
+                    <td>
+                        <form method="post" action="/update_user">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <input type="text" name="username" value="{{ user.username }}" class="form-control">
+                            <input type="checkbox" name="allow_sell" {% if user.allow_sell %}checked{% endif %}>
+                            <label for="allow_sell">Allow Sell</label>
+                            <input type="checkbox" name="isAdmin" {% if user.isAdmin %}checked{% endif %}>
+                            <label for="isAdmin">Is Admin</label>
+                            <button type="submit" class="btn btn-primary">Update</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -159,6 +159,33 @@ def logout():
     return redirect(url_for('index'))
 
 
+@app.route('/admin_dashboard', methods=['GET', 'POST'])
+def admin_dashboard():
+    if not check_permissions(['isAdmin']):
+        return redirect(url_for('login', error="You do not have permission to access the admin dashboard. Please login as an admin."))
+    users = User.query.all()
+    return render_template('admin_dashboard.html', app_name=app_name, users=users)
+
+
+@app.route('/update_user', methods=['POST'])
+def update_user():
+    if not check_permissions(['isAdmin']):
+        return redirect(url_for('login', error="You do not have permission to update users. Please login as an admin."))
+    user_id = request.form.get('user_id')
+    username = request.form.get('username')
+    allow_sell = request.form.get('allow_sell') == 'on'
+    isAdmin = request.form.get('isAdmin') == 'on'
+    session_user = User.query.get(user_id)
+    if session_user:
+        session_user.username = username
+        session_user.allow_sell = allow_sell
+        session_user.isAdmin = isAdmin
+        db.session.commit()
+        return redirect(url_for('admin_dashboard'))
+    else:
+        return redirect(url_for('admin_dashboard', error="User not found."))
+
+
 def check_permissions(required_permissions):
     if 'username' not in session:
         return False
