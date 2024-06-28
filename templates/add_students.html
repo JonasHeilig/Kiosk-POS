@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ app_name }} - Add Students</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ app_name }} - Add Students</h1>
+        <form method="post" action="/add_students">
+            <div class="mb-3">
+                <label for="prename" class="form-label">Prename</label>
+                <input type="text" class="form-control" id="prename" name="prename" required>
+            </div>
+            <div class="mb-3">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="nfc_tag_id" class="form-label">NFC Tag ID</label>
+                <input type="text" class="form-control" id="nfc_tag_id" name="nfc_tag_id" required>
+            </div>
+            <div class="mb-3">
+                <label for="barcode" class="form-label">Barcode</label>
+                <input type="text" class="form-control" id="barcode" name="barcode" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+</body>
+</html>

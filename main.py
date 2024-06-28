@@ -208,9 +208,45 @@ def student_options(id):
     requested_student = Students.query.get(id)
     if requested_student:
         transactions = TransactionsPOS.query.filter_by(student_id=requested_student.id).all()
-        return render_template('student_options.html', student_name=requested_student.prename + " " + requested_student.name, balance=requested_student.balance, transactions=transactions, app_name=app_name)
+        return render_template('student_options.html',
+                               student_name=requested_student.prename + " " + requested_student.name,
+                               balance=requested_student.balance, transactions=transactions, app_name=app_name)
     else:
         return render_template('student_options.html', error="Student not found", app_name=app_name)
+
+
+@app.route('/add_students', methods=['GET', 'POST'])
+def add_students():
+    if not check_permissions(['isAdmin']):
+        return redirect(url_for('login', error="You do not have permission to add students. Please login as an admin."))
+    if request.method == 'POST':
+        prename = request.form.get('prename')
+        name = request.form.get('name')
+        nfc_tag_id = request.form.get('nfc_tag_id')
+        barcode = request.form.get('barcode')
+        balance = 0
+        new_student = Students(prename=prename, name=name, nfc_tag_id=nfc_tag_id, barcode=barcode, balance=balance)
+        db.session.add(new_student)
+        db.session.commit()
+        return redirect(url_for('admin_dashboard'))
+    return render_template('add_students.html', app_name=app_name)
+
+
+@app.route('/add_money', methods=['GET', 'POST'])
+def add_money():
+    if not check_permissions(['allow_sell']):
+        return redirect(url_for('login', error="You do not have permission to sell. Please login as a seller."))
+    if request.method == 'POST':
+        tag_or_barcode = request.form.get('tag_or_barcode')
+        amount = float(request.form.get('amount'))
+        requested_student = Students.query.filter((Students.nfc_tag_id == tag_or_barcode) | (Students.barcode == tag_or_barcode)).first()
+        if requested_student:
+            requested_student.balance += amount
+            db.session.commit()
+            return redirect(url_for('kiosk'))
+        else:
+            return render_template('add_money.html', error="Student not found", app_name=app_name)
+    return render_template('add_money.html', app_name=app_name)
 
 
 def check_permissions(required_permissions):
