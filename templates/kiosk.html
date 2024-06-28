@@ -1,14 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
     <title>{{ app_name }} - Kiosk</title>
     <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
     <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h2>You are logged in as: {{ user_name }}</h2>
+        <h1>{{ app_name }} - Kiosk</h1>
+        <h2>Welcome, {{ user_name }}</h2>
+        <form method="post" action="/add_to_cart">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Add to Cart</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.price }}</td>
+                        <td>
+                            <input type="number" name="quantity_{{ product.id }}" min="1" max="100" value="1">
+                        </td>
+                        <td>
+                            <input type="checkbox" name="product_{{ product.id }}">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary">Checkout</button>
+        </form>
+        <a href="/add_money" class="btn btn-secondary">Add Money to Balance</a>
     </div>
 </body>
 </html>

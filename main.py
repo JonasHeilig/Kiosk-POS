@@ -135,7 +135,8 @@ def kiosk():
     if not check_permissions(['allow_sell']):
         return redirect(url_for('login', error="You do not have permission to sell. Please login as a seller."))
     session_user = db.session.get(User, session['user_id'])
-    return render_template('kiosk.html', app_name=app_name, user_name=session_user.username)
+    products = Product.query.all()
+    return render_template('kiosk.html', app_name=app_name, user_name=session_user.username, products=products)
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
@@ -239,7 +240,8 @@ def add_money():
     if request.method == 'POST':
         tag_or_barcode = request.form.get('tag_or_barcode')
         amount = float(request.form.get('amount'))
-        requested_student = Students.query.filter((Students.nfc_tag_id == tag_or_barcode) | (Students.barcode == tag_or_barcode)).first()
+        requested_student = Students.query.filter(
+            (Students.nfc_tag_id == tag_or_barcode) | (Students.barcode == tag_or_barcode)).first()
         if requested_student:
             requested_student.balance += amount
             db.session.commit()
@@ -247,6 +249,56 @@ def add_money():
         else:
             return render_template('add_money.html', error="Student not found", app_name=app_name)
     return render_template('add_money.html', app_name=app_name)
+
+
+@app.route('/add_product', methods=['GET', 'POST'])
+def add_product():
+    if not check_permissions(['isAdmin']):
+        return redirect(url_for('login', error="You do not have permission to add products. Please login as an admin."))
+    if request.method == 'POST':
+        name = request.form.get('name')
+        price = float(request.form.get('price'))
+        new_product = Product(name=name, price=price)
+        db.session.add(new_product)
+        db.session.commit()
+        return redirect(url_for('admin_dashboard'))
+    return render_template('add_product.html', app_name=app_name)
+
+
+@app.route('/checkout', methods=['GET', 'POST'])
+def checkout():
+    if 'cart' not in session or not session['cart']:
+        return redirect(url_for('kiosk'))
+
+    if request.method == 'POST':
+        payment_method = request.form.get('payment_method')
+        if payment_method == 'balance':
+            barcode_or_nfc = request.form.get('barcode_or_nfc')
+            student = Students.query.filter((Students.barcode == barcode_or_nfc) | (Students.nfc_tag_id == barcode_or_nfc)).first()
+            if student:
+                total_price = sum([product.price for product in session['cart']])
+                if student.balance >= total_price:
+                    student.balance -= total_price
+                    db.session.commit()
+                    session['cart'] = []
+                    return render_template('checkout_success.html', app_name=app_name)
+                else:
+                    return render_template('checkout.html', error="Not enough balance", app_name=app_name, products=session['cart'])
+            else:
+                return render_template('checkout.html', error="Student not found", app_name=app_name, products=session['cart'])
+        elif payment_method == 'cash':
+            total_price = sum([product.price for product in session['cart']])
+            new_transaction = TransactionsPOS(seller_id=session['user_id'], pay_with_cash=True, total_amount=total_price)
+            db.session.add(new_transaction)
+            for product in session['cart']:
+                new_item = TransactionItems(transaction_id=new_transaction.id, product_id=product.id, quantity=1)
+                db.session.add(new_item)
+            db.session.commit()
+            session['cart'] = []
+            return render_template('checkout_success.html', app_name=app_name)
+    else:
+        total_price = sum([product.price for product in session['cart']])
+        return render_template('checkout.html', app_name=app_name, products=session['cart'], total_price=total_price)
 
 
 def check_permissions(required_permissions):
