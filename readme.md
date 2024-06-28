@@ -1,5 +1,7 @@
 # POS-Kiosk
 ## Description
+POS-System for a Kiosks in a School ore somthing like that.
+
 This is a simple POS system for School-Kiosks or other thinks like that.
 
 ## Features:
@@ -21,7 +23,20 @@ Default Admin Account:
 
 ## All Urls:
 ### Seller:
+- `/kiosk`
+- `/add_money`
+- `/checkout`
 
 ### Student Station (One PC in the Kiosk to use for the Students):
+- `/student`
+- `/student/options/<int:id>`
 
 ### Administration:
+- `/dashboard`
+- `/admin_dashboard`
+- `/update_user`
+- `/add_seller`
+- `/student/list`
+- `/student/add`
+- `/product/add`
+- `/product/list`

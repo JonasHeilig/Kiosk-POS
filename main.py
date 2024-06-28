@@ -149,7 +149,8 @@ def kiosk():
                 cart.append({'product_id': product.id, 'quantity': quantity})
         session['cart'] = cart
         return redirect(url_for('checkout'))
-    return render_template('kiosk.html', app_name=app_name, currency_symbol=currency_symbol, user_name=session_user.username, products=products)
+    return render_template('kiosk.html', app_name=app_name, currency_symbol=currency_symbol,
+                           user_name=session_user.username, products=products)
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
@@ -236,13 +237,15 @@ def student_options(id):
                                balance=requested_student.balance, transactions=transactions_with_items,
                                app_name=app_name, currency_symbol=currency_symbol)
     else:
-        return render_template('student_options.html', error="Student not found", app_name=app_name, currency_symbol=currency_symbol)
+        return render_template('student_options.html', error="Student not found", app_name=app_name,
+                               currency_symbol=currency_symbol)
 
 
 @app.route('/student/list', methods=['GET', 'POST'])
 def students_list():
     if not check_permissions(['isAdmin']):
-        return redirect(url_for('login', error="You do not have permission to view or edit students. Please login as an admin."))
+        return redirect(
+            url_for('login', error="You do not have permission to view or edit students. Please login as an admin."))
     students = Students.query.all()
     if request.method == 'POST':
         for student in students:
@@ -280,13 +283,15 @@ def add_money():
         tag_or_barcode = request.form.get('tag_or_barcode')
         amount = request.form.get('amount')
         if not amount:
-            return render_template('add_money.html', error="Amount is required", app_name=app_name, currency_symbol=currency_symbol)
+            return render_template('add_money.html', error="Amount is required", app_name=app_name,
+                                   currency_symbol=currency_symbol)
         try:
             amount = round(float(amount), 2)
             if amount <= 0:
                 raise ValueError("Amount must be positive")
         except ValueError:
-            return render_template('add_money.html', error="Invalid amount format", app_name=app_name, currency_symbol=currency_symbol)
+            return render_template('add_money.html', error="Invalid amount format", app_name=app_name,
+                                   currency_symbol=currency_symbol)
 
         requested_student = Students.query.filter(
             (Students.nfc_tag_id == tag_or_barcode) | (Students.barcode == tag_or_barcode)).first()
@@ -298,7 +303,8 @@ def add_money():
             db.session.commit()
             return redirect(url_for('kiosk'))
         else:
-            return render_template('add_money.html', error="Student not found", app_name=app_name, currency_symbol=currency_symbol)
+            return render_template('add_money.html', error="Student not found", app_name=app_name,
+                                   currency_symbol=currency_symbol)
     return render_template('add_money.html', app_name=app_name, currency_symbol=currency_symbol)
 
 
@@ -314,12 +320,28 @@ def add_product():
             if price <= 0:
                 raise ValueError("Price must be positive")
         except ValueError:
-            return render_template('add_product.html', error="Invalid price format", app_name=app_name, currency_symbol=currency_symbol)
+            return render_template('add_product.html', error="Invalid price format", app_name=app_name,
+                                   currency_symbol=currency_symbol)
         new_product = Product(name=name, price=price)
         db.session.add(new_product)
         db.session.commit()
         return redirect(url_for('admin_dashboard'))
     return render_template('add_product.html', app_name=app_name, currency_symbol=currency_symbol)
+
+
+@app.route('/product/list', methods=['GET', 'POST'])
+def product_list():
+    if not check_permissions(['isAdmin']):
+        return redirect(
+            url_for('login', error="You do not have permission to view or edit products. Please login as an admin."))
+    products = Product.query.all()
+    if request.method == 'POST':
+        for product in products:
+            product.name = request.form.get(f'name_{product.id}')
+            product.price = request.form.get(f'price_{product.id}')
+        db.session.commit()
+        return redirect(url_for('product_list'))
+    return render_template('product_list.html', products=products, app_name=app_name, currency_symbol=currency_symbol)
 
 
 @app.route('/checkout', methods=['GET', 'POST'])
@@ -364,7 +386,8 @@ def checkout():
                     return redirect(url_for('kiosk'))
                 else:
                     return render_template('checkout.html', error="Not enough balance", app_name=app_name,
-                                           products=cart_products, total_price=total_price, currency_symbol=currency_symbol)
+                                           products=cart_products, total_price=total_price,
+                                           currency_symbol=currency_symbol)
             else:
                 return render_template('checkout.html', error="Student not found", app_name=app_name,
                                        products=cart_products, total_price=total_price, currency_symbol=currency_symbol)
@@ -383,7 +406,8 @@ def checkout():
             session['cart'] = []
             return redirect(url_for('kiosk'))
 
-    return render_template('checkout.html', app_name=app_name, products=cart_products, total_price=total_price, currency_symbol=currency_symbol)
+    return render_template('checkout.html', app_name=app_name, products=cart_products, total_price=total_price,
+                           currency_symbol=currency_symbol)
 
 
 def check_permissions(required_permissions):
