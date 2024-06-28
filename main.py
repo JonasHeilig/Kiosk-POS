@@ -59,6 +59,10 @@ class Product(db.Model):
 
 class TransactionsLoadMoney(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    transaction_date = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 def create_default_user():
@@ -212,7 +216,7 @@ def student():
     return render_template('student.html', app_name=app_name)
 
 
-@app.route('/student/passoptions/<int:id>', methods=['GET', 'POST'])
+@app.route('/student/options/<int:id>', methods=['GET', 'POST'])
 def student_options(id):
     requested_student = db.session.get(Students, id)
     if requested_student:
@@ -222,17 +226,41 @@ def student_options(id):
             transaction_items = db.session.query(TransactionItems).filter_by(transaction_id=transaction.id).all()
             transactions_with_items.append({
                 'transaction': transaction,
-                'items': [{'product': db.session.get(Product, item.product_id), 'quantity': item.quantity} for item in transaction_items]
+                'transaction_items': [{'product': db.session.get(Product, item.product_id), 'quantity': item.quantity}
+                                      for item in transaction_items]
             })
+
+        # Debugging-Ausgabe
+        for transaction_info in transactions_with_items:
+            print(f"Transaction ID: {transaction_info['transaction'].id}")
+            for item in transaction_info['transaction_items']:
+                print(f"Item: {item['product'].name}, Quantity: {item['quantity']}")
+
         return render_template('student_options.html',
                                student_name=requested_student.prename + " " + requested_student.name,
-                               balance=requested_student.balance, transactions=transactions_with_items, app_name=app_name)
+                               balance=requested_student.balance, transactions=transactions_with_items,
+                               app_name=app_name)
     else:
         return render_template('student_options.html', error="Student not found", app_name=app_name)
 
 
+@app.route('/student/list', methods=['GET', 'POST'])
+def students_list():
+    if not check_permissions(['isAdmin']):
+        return redirect(url_for('login', error="You do not have permission to view or edit students. Please login as an admin."))
+    students = Students.query.all()
+    if request.method == 'POST':
+        for student in students:
+            student.prename = request.form.get(f'prename_{student.id}')
+            student.name = request.form.get(f'name_{student.id}')
+            student.barcode = request.form.get(f'barcode_{student.id}')
+            student.nfc_tag_id = request.form.get(f'nfc_tag_id_{student.id}')
+        db.session.commit()
+        return redirect(url_for('students_list'))
+    return render_template('student_list.html', students=students, app_name=app_name)
 
-@app.route('/add_students', methods=['GET', 'POST'])
+
+@app.route('/add_student', methods=['GET', 'POST'])
 def add_students():
     if not check_permissions(['isAdmin']):
         return redirect(url_for('login', error="You do not have permission to add students. Please login as an admin."))
@@ -267,6 +295,9 @@ def add_money():
             (Students.nfc_tag_id == tag_or_barcode) | (Students.barcode == tag_or_barcode)).first()
         if requested_student:
             requested_student.balance += amount
+            new_load_transaction = TransactionsLoadMoney(student_id=requested_student.id, seller_id=session['user_id'],
+                                                         amount=amount)
+            db.session.add(new_load_transaction)
             db.session.commit()
             return redirect(url_for('kiosk'))
         else:
@@ -318,6 +349,8 @@ def checkout():
                     new_transaction = TransactionsPOS(seller_id=session['user_id'], student_id=student.id,
                                                       pay_with_cash=False, total_amount=total_price)
                     db.session.add(new_transaction)
+                    db.session.commit()
+
                     for item in cart:
                         new_item = TransactionItems(transaction_id=new_transaction.id, product_id=item['product_id'],
                                                     quantity=item['quantity'])
@@ -336,6 +369,8 @@ def checkout():
             new_transaction = TransactionsPOS(seller_id=session['user_id'], student_id=None, pay_with_cash=True,
                                               total_amount=total_price)
             db.session.add(new_transaction)
+            db.session.commit()
+
             for item in cart:
                 new_item = TransactionItems(transaction_id=new_transaction.id, product_id=item['product_id'],
                                             quantity=item['quantity'])

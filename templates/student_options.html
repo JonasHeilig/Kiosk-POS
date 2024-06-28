@@ -29,7 +29,7 @@
                 <p>Date: {{ transaction_info.transaction.transaction_date }}</p>
                 <p>Items:</p>
                 <ul>
-                    {% for item in transaction_info.items %}
+                    {% for item in transaction_info.transaction_items %}
                     <li>{{ item.product.name }} (Quantity: {{ item.quantity }})</li>
                     {% endfor %}
                 </ul>

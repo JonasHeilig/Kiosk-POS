@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ app_name }} - Students List</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ app_name }} - Students List</h1>
+        <form method="post" action="/student/list">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Prename</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Barcode</th>
+                        <th scope="col">NFC Tag ID</th>
+                        <th scope="col">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>
+                            <input type="text" name="prename_{{ student.id }}" value="{{ student.prename }}">
+                        </td>
+                        <td>
+                            <input type="text" name="name_{{ student.id }}" value="{{ student.name }}">
+                        </td>
+                        <td>
+                            <input type="text" name="barcode_{{ student.id }}" value="{{ student.barcode }}">
+                        </td>
+                        <td>
+                            <input type="text" name="nfc_tag_id_{{ student.id }}" value="{{ student.nfc_tag_id }}">
+                        </td>
+                        <td>
+                            <input type="text" name="balance_{{ student.id }}" value="{{ student.balance }}" readonly>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary">Update</button>
+        </form>
+    </div>
+</body>
+</html>
