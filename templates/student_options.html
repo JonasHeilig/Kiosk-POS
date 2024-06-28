@@ -22,11 +22,17 @@
         <h3>Your Balance: {{ balance }}</h3>
         <h3>Your Transactions:</h3>
         <ul>
-            {% for transaction in transactions %}
+            {% for transaction_info in transactions %}
             <li>
-                <p>Transaction ID: {{ transaction.id }}</p>
-                <p>Total Amount: {{ transaction.total_amount }}</p>
-                <p>Date: {{ transaction.transaction_date }}</p>
+                <p>Transaction ID: {{ transaction_info.transaction.id }}</p>
+                <p>Total Amount: {{ transaction_info.transaction.total_amount }}</p>
+                <p>Date: {{ transaction_info.transaction.transaction_date }}</p>
+                <p>Items:</p>
+                <ul>
+                    {% for item in transaction_info.items %}
+                    <li>{{ item.product.name }} (Quantity: {{ item.quantity }})</li>
+                    {% endfor %}
+                </ul>
             </li>
             {% endfor %}
         </ul>

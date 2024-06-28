@@ -8,6 +8,11 @@
 <body>
     <div class="container">
         <h1>{{ app_name }} - Add Money</h1>
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
         <form method="post" action="/add_money">
             <div class="mb-3">
                 <label for="tag_or_barcode" class="form-label">Tag or Barcode</label>
@@ -15,9 +20,9 @@
             </div>
             <div class="mb-3">
                 <label for="amount" class="form-label">Amount</label>
-                <input type="number" step="0.01" class="form-control" id="amount" name="Add Balance" required>
+                <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Add Money</button>
         </form>
     </div>
 </body>
