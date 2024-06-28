@@ -15,23 +15,23 @@
                     <th scope="col">Allow Sell</th>
                     <th scope="col">Is Admin</th>
                     <th scope="col">Total Earnings</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col">Update User</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
                 <tr>
                     <td>{{ user.username }}</td>
-                    <td>{{ user.allow_sell }}</td>
+                    <td>{{ user.allow_sell }}</td>a
                     <td>{{ user.isAdmin }}</td>
                     <td>{{ user.total_earnings }}</td>
                     <td>
                         <form method="post" action="/update_user">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <input type="text" name="username" value="{{ user.username }}" class="form-control">
-                            <input type="checkbox" name="allow_sell" {% if user.allow_sell %}checked{% endif %}>
+                            <input type="text" name="username" id="username" value="{{ user.username }}" class="form-control">
+                            <input type="checkbox" name="allow_sell" id="allow_sell" {% if user.allow_sell %}checked{% endif %}>
                             <label for="allow_sell">Allow Sell</label>
-                            <input type="checkbox" name="isAdmin" {% if user.isAdmin %}checked{% endif %}>
+                            <input type="checkbox" name="isAdmin" id="isAdmin" {% if user.isAdmin %}checked{% endif %}>
                             <label for="isAdmin">Is Admin</label>
                             <button type="submit" class="btn btn-primary">Update</button>
                         </form>

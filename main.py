@@ -26,6 +26,8 @@ class User(db.Model):
 
 class Students(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    prename = db.Column(db.String(50))
+    name = db.Column(db.String(50))
     nfc_tag_id = db.Column(db.String(100), unique=True)
     barcode = db.Column(db.String(100), unique=True)
     balance = db.Column(db.Float, default=0.0)
@@ -98,7 +100,7 @@ def login():
 @app.route('/user', methods=['GET', 'POST'])
 def user():
     if 'username' not in session:
-        return redirect(url_for('login', error="You do not have permission to access the user page. Please login."))
+        return redirect(url_for('index'))
     session_user = db.session.get(User, session['user_id'])
     return render_template('user.html', user_name=session_user.username, app_name=app_name)
 
@@ -106,7 +108,7 @@ def user():
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'username' not in session:
-        return redirect(url_for('login', error="You do not have permission to access the dashboard. Please login."))
+        return redirect(url_for('index'))
     session_user = db.session.get(User, session['user_id'])
     return render_template('dashboard.html', user_name=session_user.username, app_name=app_name)
 
@@ -162,7 +164,8 @@ def logout():
 @app.route('/admin_dashboard', methods=['GET', 'POST'])
 def admin_dashboard():
     if not check_permissions(['isAdmin']):
-        return redirect(url_for('login', error="You do not have permission to access the admin dashboard. Please login as an admin."))
+        return redirect(url_for('login',
+                                error="You do not have permission to access the admin dashboard. Please login as an admin."))
     users = User.query.all()
     return render_template('admin_dashboard.html', app_name=app_name, users=users)
 
@@ -184,6 +187,30 @@ def update_user():
         return redirect(url_for('admin_dashboard'))
     else:
         return redirect(url_for('admin_dashboard', error="User not found."))
+
+
+@app.route('/student', methods=['GET', 'POST'])
+def student():
+    if request.method == 'POST':
+        barcode_or_nfc = request.form.get('barcode_or_nfc')
+        requested_student = Students.query.filter_by(barcode=barcode_or_nfc).first()
+        if not requested_student:
+            requested_student = Students.query.filter_by(nfc_tag_id=barcode_or_nfc).first()
+        if requested_student:
+            return redirect(url_for('student_options', id=requested_student.id))
+        else:
+            return render_template('student.html', error="Student not found", app_name=app_name)
+    return render_template('student.html', app_name=app_name)
+
+
+@app.route('/student_options/<int:id>', methods=['GET', 'POST'])
+def student_options(id):
+    requested_student = Students.query.get(id)
+    if requested_student:
+        transactions = TransactionsPOS.query.filter_by(student_id=requested_student.id).all()
+        return render_template('student_options.html', student_name=requested_student.prename + " " + requested_student.name, balance=requested_student.balance, transactions=transactions, app_name=app_name)
+    else:
+        return render_template('student_options.html', error="Student not found", app_name=app_name)
 
 
 def check_permissions(required_permissions):

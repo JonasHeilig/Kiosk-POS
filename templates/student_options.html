@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ app_name }} - Student Options</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+    <style>
+        .center-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container center-content">
+        <h1>{{ app_name }} - Student Options</h1>
+        <h2>Hello, {{ student_name }}</h2>
+        <h3>Your Balance: {{ balance }}</h3>
+        <h3>Your Transactions:</h3>
+        <ul>
+            {% for transaction in transactions %}
+            <li>
+                <p>Transaction ID: {{ transaction.id }}</p>
+                <p>Total Amount: {{ transaction.total_amount }}</p>
+                <p>Date: {{ transaction.transaction_date }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="/student" class="btn btn-primary">Logout</a>
+    </div>
+</body>
+</html>
