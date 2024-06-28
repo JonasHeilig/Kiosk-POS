@@ -2,19 +2,8 @@
 <html lang="en">
 <head>
     <title>{{ app_name }} - Checkout</title>
-    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
-    <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
-    <script>
-        function toggleBarcodeInput() {
-            var paymentMethod = document.getElementById("payment_method").value;
-            var barcodeInput = document.getElementById("barcode_input");
-            if (paymentMethod === "cash") {
-                barcodeInput.style.display = "none";
-            } else {
-                barcodeInput.style.display = "block";
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script src="/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -29,15 +18,13 @@
                 <tr>
                     <th scope="col">Product</th>
                     <th scope="col">Price</th>
-                    <th scope="col">Quantity</th>
                 </tr>
             </thead>
             <tbody>
-                {% for item in products %}
+                {% for product in products %}
                 <tr>
-                    <td>{{ item.product.name }}</td>
-                    <td>{{ item.product.price }}</td>
-                    <td>{{ item.quantity }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.price }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -45,20 +32,17 @@
         <form method="post" action="/checkout">
             <div class="mb-3">
                 <label for="payment_method" class="form-label">Payment Method</label>
-                <select class="form-select" id="payment_method" name="payment_method" onchange="toggleBarcodeInput()" required>
+                <select class="form-select" id="payment_method" name="payment_method" required>
                     <option value="balance">Balance</option>
                     <option value="cash">Cash</option>
                 </select>
             </div>
-            <div class="mb-3" id="barcode_input">
+            <div class="mb-3">
                 <label for="barcode_or_nfc" class="form-label">Barcode or NFC</label>
                 <input type="text" class="form-control" id="barcode_or_nfc" name="barcode_or_nfc" required>
             </div>
             <button type="submit" class="btn btn-primary">Checkout</button>
         </form>
     </div>
-    <script>
-        toggleBarcodeInput();
-    </script>
 </body>
 </html>

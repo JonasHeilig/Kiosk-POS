@@ -136,6 +136,14 @@ def kiosk():
         return redirect(url_for('login', error="You do not have permission to sell. Please login as a seller."))
     session_user = db.session.get(User, session['user_id'])
     products = Product.query.all()
+    if request.method == 'POST':
+        cart = []
+        for product in products:
+            if f'product_{product.id}' in request.form:
+                quantity = int(request.form.get(f'quantity_{product.id}', 1))
+                cart.append({'product_id': product.id, 'quantity': quantity})
+        session['cart'] = cart
+        return redirect(url_for('checkout'))
     return render_template('kiosk.html', app_name=app_name, user_name=session_user.username, products=products)
 
 
@@ -270,35 +278,51 @@ def checkout():
     if 'cart' not in session or not session['cart']:
         return redirect(url_for('kiosk'))
 
+    cart = session['cart']
+    product_ids = [item['product_id'] for item in cart]
+    products = Product.query.filter(Product.id.in_(product_ids)).all()
+
+    cart_products = []
+    total_price = 0.0
+    for item in cart:
+        for product in products:
+            if product.id == item['product_id']:
+                cart_products.append({'product': product, 'quantity': item['quantity']})
+                total_price += product.price * item['quantity']
+
     if request.method == 'POST':
         payment_method = request.form.get('payment_method')
+        barcode_or_nfc = request.form.get('barcode_or_nfc', '').strip()
+
         if payment_method == 'balance':
-            barcode_or_nfc = request.form.get('barcode_or_nfc')
-            student = Students.query.filter((Students.barcode == barcode_or_nfc) | (Students.nfc_tag_id == barcode_or_nfc)).first()
+            student = Students.query.filter(
+                (Students.barcode == barcode_or_nfc) | (Students.nfc_tag_id == barcode_or_nfc)).first()
             if student:
-                total_price = sum([product.price for product in session['cart']])
                 if student.balance >= total_price:
                     student.balance -= total_price
                     db.session.commit()
                     session['cart'] = []
-                    return render_template('checkout_success.html', app_name=app_name)
+                    return redirect(url_for('kiosk'))
                 else:
-                    return render_template('checkout.html', error="Not enough balance", app_name=app_name, products=session['cart'])
+                    return render_template('checkout.html', error="Not enough balance", app_name=app_name,
+                                           products=cart_products, total_price=total_price)
             else:
-                return render_template('checkout.html', error="Student not found", app_name=app_name, products=session['cart'])
+                return render_template('checkout.html', error="Student not found", app_name=app_name,
+                                       products=cart_products, total_price=total_price)
+
         elif payment_method == 'cash':
-            total_price = sum([product.price for product in session['cart']])
-            new_transaction = TransactionsPOS(seller_id=session['user_id'], pay_with_cash=True, total_amount=total_price)
+            new_transaction = TransactionsPOS(seller_id=session['user_id'], pay_with_cash=True,
+                                              total_amount=total_price)
             db.session.add(new_transaction)
-            for product in session['cart']:
-                new_item = TransactionItems(transaction_id=new_transaction.id, product_id=product.id, quantity=1)
+            for item in cart:
+                new_item = TransactionItems(transaction_id=new_transaction.id, product_id=item['product_id'],
+                                            quantity=item['quantity'])
                 db.session.add(new_item)
             db.session.commit()
             session['cart'] = []
-            return render_template('checkout_success.html', app_name=app_name)
-    else:
-        total_price = sum([product.price for product in session['cart']])
-        return render_template('checkout.html', app_name=app_name, products=session['cart'], total_price=total_price)
+            return redirect(url_for('kiosk'))
+
+    return render_template('checkout.html', app_name=app_name, products=cart_products, total_price=total_price)
 
 
 def check_permissions(required_permissions):
