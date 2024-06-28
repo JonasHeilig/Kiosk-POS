@@ -12,3 +12,16 @@ This is a simple POS system for School-Kiosks or other thinks like that.
 - Simple Kiosk UI for the Seller
 - A simple UI for the Student
 - Admins can easy edit the products and the categories
+
+## Inforation:
+Default Admin Account:
+- Username: admin
+- Password: password
+
+
+## All Urls:
+### Seller:
+
+### Student Station (One PC in the Kiosk to use for the Students):
+
+### Administration:

@@ -6,6 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 
 app_name = 'School'  # Change this to your desired app name, e.g., 'University' or 'Your Company Name'
+currency_symbol = '€'  # Change this to your desired currency symbol, e.g., '$' or '£'
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.db'
@@ -148,7 +149,7 @@ def kiosk():
                 cart.append({'product_id': product.id, 'quantity': quantity})
         session['cart'] = cart
         return redirect(url_for('checkout'))
-    return render_template('kiosk.html', app_name=app_name, user_name=session_user.username, products=products)
+    return render_template('kiosk.html', app_name=app_name, currency_symbol=currency_symbol, user_name=session_user.username, products=products)
 
 
 @app.route('/change_password', methods=['GET', 'POST'])
@@ -230,18 +231,12 @@ def student_options(id):
                                       for item in transaction_items]
             })
 
-        # Debugging-Ausgabe
-        for transaction_info in transactions_with_items:
-            print(f"Transaction ID: {transaction_info['transaction'].id}")
-            for item in transaction_info['transaction_items']:
-                print(f"Item: {item['product'].name}, Quantity: {item['quantity']}")
-
         return render_template('student_options.html',
                                student_name=requested_student.prename + " " + requested_student.name,
                                balance=requested_student.balance, transactions=transactions_with_items,
-                               app_name=app_name)
+                               app_name=app_name, currency_symbol=currency_symbol)
     else:
-        return render_template('student_options.html', error="Student not found", app_name=app_name)
+        return render_template('student_options.html', error="Student not found", app_name=app_name, currency_symbol=currency_symbol)
 
 
 @app.route('/student/list', methods=['GET', 'POST'])
@@ -257,10 +252,10 @@ def students_list():
             student.nfc_tag_id = request.form.get(f'nfc_tag_id_{student.id}')
         db.session.commit()
         return redirect(url_for('students_list'))
-    return render_template('student_list.html', students=students, app_name=app_name)
+    return render_template('student_list.html', students=students, app_name=app_name, currency_symbol=currency_symbol)
 
 
-@app.route('/add_student', methods=['GET', 'POST'])
+@app.route('/student/add', methods=['GET', 'POST'])
 def add_students():
     if not check_permissions(['isAdmin']):
         return redirect(url_for('login', error="You do not have permission to add students. Please login as an admin."))
@@ -285,38 +280,46 @@ def add_money():
         tag_or_barcode = request.form.get('tag_or_barcode')
         amount = request.form.get('amount')
         if not amount:
-            return render_template('add_money.html', error="Amount is required", app_name=app_name)
+            return render_template('add_money.html', error="Amount is required", app_name=app_name, currency_symbol=currency_symbol)
         try:
-            amount = float(amount)
+            amount = round(float(amount), 2)
+            if amount <= 0:
+                raise ValueError("Amount must be positive")
         except ValueError:
-            return render_template('add_money.html', error="Invalid amount format", app_name=app_name)
+            return render_template('add_money.html', error="Invalid amount format", app_name=app_name, currency_symbol=currency_symbol)
 
         requested_student = Students.query.filter(
             (Students.nfc_tag_id == tag_or_barcode) | (Students.barcode == tag_or_barcode)).first()
         if requested_student:
-            requested_student.balance += amount
+            requested_student.balance = round(requested_student.balance + amount, 2)
             new_load_transaction = TransactionsLoadMoney(student_id=requested_student.id, seller_id=session['user_id'],
                                                          amount=amount)
             db.session.add(new_load_transaction)
             db.session.commit()
             return redirect(url_for('kiosk'))
         else:
-            return render_template('add_money.html', error="Student not found", app_name=app_name)
-    return render_template('add_money.html', app_name=app_name)
+            return render_template('add_money.html', error="Student not found", app_name=app_name, currency_symbol=currency_symbol)
+    return render_template('add_money.html', app_name=app_name, currency_symbol=currency_symbol)
 
 
-@app.route('/add_product', methods=['GET', 'POST'])
+@app.route('/product/add', methods=['GET', 'POST'])
 def add_product():
     if not check_permissions(['isAdmin']):
         return redirect(url_for('login', error="You do not have permission to add products. Please login as an admin."))
     if request.method == 'POST':
         name = request.form.get('name')
-        price = float(request.form.get('price'))
+        price = request.form.get('price')
+        try:
+            price = round(float(price), 2)
+            if price <= 0:
+                raise ValueError("Price must be positive")
+        except ValueError:
+            return render_template('add_product.html', error="Invalid price format", app_name=app_name, currency_symbol=currency_symbol)
         new_product = Product(name=name, price=price)
         db.session.add(new_product)
         db.session.commit()
         return redirect(url_for('admin_dashboard'))
-    return render_template('add_product.html', app_name=app_name)
+    return render_template('add_product.html', app_name=app_name, currency_symbol=currency_symbol)
 
 
 @app.route('/checkout', methods=['GET', 'POST'])
@@ -335,6 +338,7 @@ def checkout():
             if product.id == item['product_id']:
                 cart_products.append({'product': product, 'quantity': item['quantity']})
                 total_price += product.price * item['quantity']
+    total_price = round(total_price, 2)
 
     if request.method == 'POST':
         payment_method = request.form.get('payment_method')
@@ -345,7 +349,7 @@ def checkout():
                 (Students.barcode == barcode_or_nfc) | (Students.nfc_tag_id == barcode_or_nfc)).first()
             if student:
                 if student.balance >= total_price:
-                    student.balance -= total_price
+                    student.balance = round(student.balance - total_price, 2)
                     new_transaction = TransactionsPOS(seller_id=session['user_id'], student_id=student.id,
                                                       pay_with_cash=False, total_amount=total_price)
                     db.session.add(new_transaction)
@@ -360,10 +364,10 @@ def checkout():
                     return redirect(url_for('kiosk'))
                 else:
                     return render_template('checkout.html', error="Not enough balance", app_name=app_name,
-                                           products=cart_products, total_price=total_price)
+                                           products=cart_products, total_price=total_price, currency_symbol=currency_symbol)
             else:
                 return render_template('checkout.html', error="Student not found", app_name=app_name,
-                                       products=cart_products, total_price=total_price)
+                                       products=cart_products, total_price=total_price, currency_symbol=currency_symbol)
 
         elif payment_method == 'cash':
             new_transaction = TransactionsPOS(seller_id=session['user_id'], student_id=None, pay_with_cash=True,
@@ -379,7 +383,7 @@ def checkout():
             session['cart'] = []
             return redirect(url_for('kiosk'))
 
-    return render_template('checkout.html', app_name=app_name, products=cart_products, total_price=total_price)
+    return render_template('checkout.html', app_name=app_name, products=cart_products, total_price=total_price, currency_symbol=currency_symbol)
 
 
 def check_permissions(required_permissions):

@@ -28,7 +28,7 @@
             <thead>
                 <tr>
                     <th scope="col">Product</th>
-                    <th scope="col">Price</th>
+                    <th scope="col">Price (in {{ currency_symbol }})</th>
                     <th scope="col">Quantity</th>
                 </tr>
             </thead>
@@ -36,7 +36,7 @@
                 {% for item in products %}
                 <tr>
                     <td>{{ item.product.name }}</td>
-                    <td>{{ item.product.price }}</td>
+                    <td>{{ item.product.price }} {{ currency_symbol }}</td>
                     <td>{{ item.quantity }}</td>
                 </tr>
                 {% endfor %}

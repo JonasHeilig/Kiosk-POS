@@ -4,28 +4,19 @@
     <title>{{ app_name }} - Student Options</title>
     <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
     <script src="/static/bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
-    <style>
-        .center-content {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
-    </style>
 </head>
 <body>
-    <div class="container center-content">
+    <div>
         <h1>{{ app_name }} - Student Options</h1>
         <h2>Hello, {{ student_name }}</h2>
-        <h3>Your Balance: {{ balance }}</h3>
+        <h3>Your Balance: {{ balance }} {{ currency_symbol }}</h3>
         <h3>Your Transactions:</h3>
+        <br>
         <ul>
             {% for transaction_info in transactions %}
             <li>
                 <p>Transaction ID: {{ transaction_info.transaction.id }}</p>
-                <p>Total Amount: {{ transaction_info.transaction.total_amount }}</p>
+                <p>Total Amount: {{ transaction_info.transaction.total_amount }} {{ currency_symbol }}</p>
                 <p>Date: {{ transaction_info.transaction.transaction_date }}</p>
                 <p>Items:</p>
                 <ul>
@@ -34,6 +25,7 @@
                     {% endfor %}
                 </ul>
             </li>
+            <br><br><br>
             {% endfor %}
         </ul>
         <a href="/student" class="btn btn-primary">Logout</a>

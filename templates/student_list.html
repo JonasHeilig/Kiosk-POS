@@ -16,7 +16,7 @@
                         <th scope="col">Name</th>
                         <th scope="col">Barcode</th>
                         <th scope="col">NFC Tag ID</th>
-                        <th scope="col">Balance</th>
+                        <th scope="col">Balance (in {{ currency_symbol }})</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,7 +35,7 @@
                             <input type="text" name="nfc_tag_id_{{ student.id }}" value="{{ student.nfc_tag_id }}">
                         </td>
                         <td>
-                            <input type="text" name="balance_{{ student.id }}" value="{{ student.balance }}" readonly>
+                            <input type="text" name="balance_{{ student.id }}" value="{{ student.balance }} {{ currency_symbol }}" readonly>
                         </td>
                     </tr>
                     {% endfor %}

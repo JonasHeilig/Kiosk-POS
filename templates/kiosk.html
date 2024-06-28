@@ -14,7 +14,7 @@
                 <thead>
                     <tr>
                         <th scope="col">Product</th>
-                        <th scope="col">Price</th>
+                        <th scope="col">Price (in {{ currency_symbol }})</th>
                         <th scope="col">Quantity</th>
                         <th scope="col">Add to Cart</th>
                     </tr>
@@ -23,7 +23,7 @@
                     {% for product in products %}
                     <tr>
                         <td>{{ product.name }}</td>
-                        <td>{{ product.price }}</td>
+                        <td>{{ product.price }} {{ currency_symbol }}</td>
                         <td>
                             <input type="number" name="quantity_{{ product.id }}" min="1" max="100" value="1">
                         </td>
